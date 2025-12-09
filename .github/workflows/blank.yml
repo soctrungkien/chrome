@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install tools
       run: |
         sudo apt update
-        sudo apt install -y zip unzip apksigner
+        sudo apt install -y zip unzip apksigner wget
 
     - name: Download prebuilt Chromium
       run: |
@@ -22,19 +22,24 @@ jobs:
 
     - name: Apply mods
       run: |
-        rm base/manifest/security-config.xml 2>/dev/null || true
-        sed -i 's/useHardwareAcceleration="true"/useHardwareAcceleration="false"/g' base/AndroidManifest.xml
+        # Chỗ này đặt patch tùy ý
+        sed -i 's/useHardwareAcceleration="true"/useHardwareAcceleration="false"/g' base/AndroidManifest.xml || true
 
     - name: Repack
       run: |
         cd base
         zip -r ../chromium-mod.apk .
 
-    - name: Sign
+    - name: Sign APK
       run: |
-        apksigner sign --ks keystore.jks --ks-pass pass:123 chromium-mod.apk
+        keytool -genkey -v -keystore key.jks -storepass 123456 -keypass 123456 -alias key -keyalg RSA -keysize 2048 -validity 10000
+        apksigner sign --ks key.jks --ks-pass pass:123456 chromium-mod.apk
 
-    - name: Upload
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chromium-mod-fast
+        path: chromium-mod.apk    - name: Upload
       uses: actions/upload-artifact@v3
       with:
         name: chromium-mod-fast
