@@ -1,0 +1,41 @@
+name: Chromium Repack Fast
+
+on:
+  workflow_dispatch:
+
+jobs:
+  repack:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install tools
+      run: |
+        sudo apt update
+        sudo apt install -y zip unzip apksigner
+
+    - name: Download prebuilt Chromium
+      run: |
+        wget -O chromium.apk "https://example.com/chromium-prebuilt.apk"
+        unzip chromium.apk -d base
+
+    - name: Apply mods
+      run: |
+        rm base/manifest/security-config.xml 2>/dev/null || true
+        sed -i 's/useHardwareAcceleration="true"/useHardwareAcceleration="false"/g' base/AndroidManifest.xml
+
+    - name: Repack
+      run: |
+        cd base
+        zip -r ../chromium-mod.apk .
+
+    - name: Sign
+      run: |
+        apksigner sign --ks keystore.jks --ks-pass pass:123 chromium-mod.apk
+
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        name: chromium-mod-fast
+        path: chromium-mod.apk
